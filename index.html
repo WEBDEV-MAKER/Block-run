@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Advanced Block Coding Platform</title>
+  <!-- Include Blockly -->
+  <script src="https://unpkg.com/blockly/blockly.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      display: flex;
+      height: 100vh;
+    }
+    /* Sidebar for Controls */
+    #sidebar {
+      width: 30%;
+      padding: 20px;
+      box-sizing: border-box;
+      border-right: 2px solid #ccc;
+      overflow-y: auto;
+      background-color: #f5f5f5;
+    }
+    /* Main Workspace */
+    #blocklyDiv {
+      height: 100%;
+      width: 70%;
+      position: relative;
+    }
+    /* Buttons Styling */
+    button {
+      padding: 10px;
+      margin: 5px 0;
+      width: 100%;
+      font-size: 16px;
+      cursor: pointer;
+      border: none;
+      border-radius: 4px;
+    }
+    /* Specific Button Styles */
+    #greenFlagBtn {
+      background-color: #4CAF50;
+      color: white;
+      font-weight: bold;
+    }
+    #saveBtn, #loadBtn, #shareBtn, #viewSharedBtn {
+      background-color: #2196F3;
+      color: white;
+    }
+    #logoutBtn {
+      background-color: #f44336;
+      color: white;
+    }
+    #createStudentBtn {
+      background-color: #FF9800;
+      color: white;
+    }
+    /* Modal Styles */
+    .modal {
+      display: none; 
+      position: fixed; 
+      z-index: 100; 
+      left: 0;
+      top: 0;
+      width: 100%; 
+      height: 100%; 
+      overflow: auto; 
+      background-color: rgba(0,0,0,0.4); 
+    }
+    .modal-content {
+      background-color: #fefefe;
+      margin: 10% auto;
+      padding: 20px;
+      border: 1px solid #888;
+      width: 300px;
+      text-align: center;
+      position: relative;
+      border-radius: 8px;
+    }
+    .close {
+      color: #aaa;
+      position: absolute;
+      top: 10px;
+      right: 20px;
+      font-size: 24px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .close:hover,
+    .close:focus {
+      color: black;
+    }
+    /* Shared Projects Styling */
+    #shared-projects {
+      margin-top: 20px;
+    }
+    .project-item {
+      padding: 10px;
+      border-bottom: 1px solid #ddd;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .project-item:hover {
+      background-color: #f9f9f9;
+    }
+    .remix-button {
+      padding: 5px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      background-color: #8BC34A;
+      color: white;
+      border: none;
+      border-radius: 4px;
+    }
+    /* Sprite Area */
+    #spriteArea {
+      margin-top: 20px;
+      border-top: 1px solid #ccc;
+      padding-top: 20px;
+    }
+    #spriteArea h3 {
+      margin-bottom: 10px;
+    }
+    #spriteList div {
+      padding: 5px 0;
+    }
+    /* Output Area */
+    #output {
+      width: 100%;
+      height: 150px;
+      margin-top: 20px;
+      padding: 10px;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      background-color: #f1f1f1;
+      overflow: auto;
+      white-space: pre-wrap;
+      border-radius: 4px;
+    }
+    /* Code Display Area */
+    #codeArea {
+      width: 100%;
+      height: 150px;
+      margin-top: 20px;
+      padding: 10px;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      background-color: #f9f9f9;
+      overflow: auto;
+      white-space: pre-wrap;
+      border-radius: 4px;
+    }
+    /* Title Styling */
+    #appTitle {
+      cursor: pointer;
+      margin: 10px 0;
+      text-align: center;
+    }
+    /* Sprite Styling */
+    .sprite {
+      position: absolute;
+      width: 50px;
+      height: 50px;
+      background-color: #FF5722;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: transform 0.2s, left 0.2s, top 0.2s, background-color 0.2s;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Application Title -->
+  <h1 id="appTitle">Advanced Block Coding Platform</h1>
+
+  <!-- Sidebar for Controls -->
+  <div id="sidebar">
+    <!-- Authentication Section -->
+    <div id="authSection">
+      <h2>Welcome</h2>
+      <button id="loginBtn">Login</button>
+      <button id="registerBtn">Register</button>
+      <button id="logoutBtn" style="display:none;">Logout</button>
+      <p id="currentUser"></p>
+    </div>
+
+    <!-- Project Controls -->
+    <div id="projectControls" style="display:none;">
+      <button id="greenFlagBtn">Green Flag</button>
+      <button id="saveBtn">Save Project</button>
+      <button id="loadBtn">Load Project</button>
+      <button id="shareBtn">Share Project</button>
+      <button id="viewSharedBtn">View Shared Projects</button>
+      
+      <h3>Generated JavaScript Code:</h3>
+      <textarea id="codeArea" readonly></textarea>
+      
+      <h3>Output:</h3>
+      <div id="output"></div>
+    </div>
+
+    <!-- Teacher Controls -->
+    <div id="teacherControls" style="display:none;">
+      <h3>Create Student Account</h3>
+      <button id="createStudentBtn">Create Student</button>
+      <div id="studentAccountsList"></div>
+    </div>
+
+    <!-- Shared Projects -->
+    <div id="shared-projects" style="display:none;">
+      <h3>Shared Projects</h3>
+      <div id="sharedProjectsList"></div>
+    </div>
+
+    <!-- Sprite Management -->
+    <div id="spriteArea" style="display:none;">
+      <h3>Sprites</h3>
+      <button id="addSpriteBtn">Add Sprite</button>
+      <div id="spriteList"></div>
+    </div>
+  </div>
+
+  <!-- Blockly Workspace -->
+  <div id="blocklyDiv"></div>
+
+  <!-- Authentication Modal -->
+  <div id="authModal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h2 id="authTitle">Login</h2>
+      <form id="authForm">
+        <input type="email" id="email" placeholder="Email" required style="width: 90%; padding: 8px; margin-bottom: 10px;"><br>
+        <input type="password" id="password" placeholder="Password" required style="width: 90%; padding: 8px; margin-bottom: 10px;"><br>
+        <div class="role-selection">
+          <label><input type="radio" name="role" value="student" checked> Student</label>
+          <label><input type="radio" name="role" value="teacher"> Teacher</label>
+        </div>
+        <button type="submit" id="authButton">Login</button>
+      </form>
+      <p id="toggleAuth">Don't have an account? <a href="#" id="toggleLink">Register here</a></p>
+    </div>
+  </div>
+
+  <!-- Hidden File Input for Importing Projects -->
+  <input type="file" id="importFile" accept=".xml" style="display:none;">
+
+  <script>
+    // ===========================
+    // Blockly Initialization
+    // ===========================
+    var workspace = Blockly.inject('blocklyDiv', {
+      toolbox: `<xml xmlns="https://developers.google.com/blockly/xml">
+                  <category name="Events" colour="120">
+                    <block type="event_when_green_flag_clicked"></block>
+                    <block type="event_when_title_clicked"></block>
+                    <block type="event_when_sprite_clicked"></block>
+                  </category>
+                  <category name="Control" colour="%{BKY_LOGIC_HUE}">
+                    <block type="controls_ifelse"></block>
+                    <block type="controls_repeat_ext"></block>
+                    <block type="controls_whileUntil"></block>
+                    <block type="controls_for"></block>
+                    <block type="controls_forEach"></block>
+                    <block type="controls_flow_statements"></block>
+                  </category>
+                  <category name="Math" colour="%{BKY_MATH_HUE}">
+                    <block type="math_number">
+                      <field name="NUM">0</field>
+                    </block>
+                    <block type="math_arithmetic"></block>
+                    <block type="math_single"></block>
+                    <block type="math_trig"></block>
+                    <block type="math_constant"></block>
+                    <block type="math_number_property"></block>
+                    <block type="math_round"></block>
+                    <block type="math_on_list"></block>
+                    <block type="math_modulo"></block>
+                    <block type="math_constrain"></block>
+                    <block type="math_random_int"></block>
+                    <block type="math_random_float"></block>
+                  </category>
+                  <category name="Text" colour="%{BKY_TEXTS_HUE}">
+                    <block type="text"></block>
+                    <block type="text_join"></block>
+                    <block type="text_append"></block>
+                    <block type="text_length"></block>
+                    <block type="text_isEmpty"></block>
+                    <block type="text_indexOf"></block>
+                    <block type="text_charAt"></block>
+                    <block type="text_getSubstring"></block>
+                    <block type="text_changeCase"></block>
+                    <block type="text_trim"></block>
+                    <block type="text_print"></block>
+                    <block type="text_prompt_ext"></block>
+                  </category>
+                  <category name="Variables" colour="%{BKY_VARIABLES_HUE}" custom="VARIABLE"></category>
+                  <category name="Functions" colour="%{BKY_PROCEDURES_HUE}" custom="PROCEDURE"></category>
+                  <category name="Sprites" colour="210">
+                    <block type="sprite_move"></block>
+                    <block type="sprite_turn"></block>
+                    <block type="sprite_set_position"></block>
+                    <block type="sprite_change_color"></block>
+                    <block type="sprite_show"></block>
+                    <block type="sprite_hide"></block>
+                  </category>
+                  <category name="Custom" colour="290">
+                    <block type="display_image"></block>
+                  </category>
+                </xml>`
+    });
+
+    // ===========================
+    // Custom Blocks Definition
+    // ===========================
+
+    // Display Image Block
+    Blockly.Blocks['display_image'] = {
+      init: function() {
+        this.appendDummyInput()
+            .appendField("Display Image")
+            .appendField(new Blockly.FieldTextInput("https://"), "IMAGE_URL");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(290);
+        this.setTooltip("Displays an image from a specified URL.");
+        this.setHelpUrl("");
+      }
+    };
+
+    Blockly.JavaScript['display_image'] = function(block) {
+      var image_url = block.getFieldValue('IMAGE_URL');
+      var code = `displayImage("${image_url}");\n`;
+      return code;
+    };
+
+    // Event Block: When Green Flag Clicked
+    Blockly.Blocks['event_when_green_flag_clicked'] = {
+      init: function() {
+        this.appendDummyInput()
+            .appendField("when green flag clicked");
+        this.appendStatementInput("DO")
+            .setCheck(null);
+        this.setColour(120);
+        this.setTooltip("Start program when green flag is clicked.");
+        this.setHelpUrl("");
+      }
+    };
+
+    Blockly.JavaScript['event_when_green_flag_clicked'] = function(block) {
+      var branch = Blockly.JavaScript.statementToCode(block, 'DO');
+      var code = `document.getElementById('greenFlagBtn').addEventListener('click', function() {\n${branch}});\n`;
+      return code;
+    };
+
+    // Event Block: When Title Clicked
+    Blockly.Blocks['event_when_title_clicked'] = {
+      init: function() {
+        this.appendDummyInput()
+            .appendField("when title clicked");
+        this.appendStatementInput("DO")
+            .setCheck(null);
+        this.setColour(120);
+        this.setTooltip("Start program when title is clicked.");
+        this.setHelpUrl("");
+      }
+    };
+
+    Blockly.JavaScript['event_when_title_clicked'] = function(block) {
+      var branch = Blockly.JavaScript.statementToCode(block, 'DO');
+      var code = `document.getElementById('appTitle').addEventListener('click', function() {\n${branch}});\n`;
+      return code;
+    };
+
+    // Event Block: When Sprite Clicked
+    Blockly.Blocks['event_when_sprite_clicked'] = {
+      init: function() {
+        this.appendDummyInput()
+            .appendField("when sprite")
+            .appendField(new Blockly.FieldDropdown(getSpriteNames), "SPRITE")
+            .appendField("clicked");
+        this.appendStatementInput("DO")
+            .setCheck(null);
+        this.setColour(120);
+        this.setTooltip("Start program when a sprite is clicked.");
+        this.setHelpUrl("");
+      }
+    };
+
+    Blockly.JavaScript['event_when_sprite_clicked'] = function(block) {
+      var dropdown_sprite = block.getFieldValue('SPRITE');
+      var branch = Blockly.JavaScript.statementToCode(block, 'DO');
+      var code = `document.getElementById('${dropdown_sprite}').addEventListener('click', function() {\n${branch}});\n`;
+      return code;
+    };
+
+    // Sprite Control Blocks
+    Blockly.Blocks['sprite_move'] = {
+      init: function() {
+        this.appendValueInput("STEPS")
+            .setCheck("Number")
+            .appendField("move")
+            .appendField(new Blockly.FieldDropdown(getSpriteNames), "SPRITE")
+            .appendField("steps");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(210);
+        this.setTooltip("Moves the sprite a specified number of steps.");
+        this.setHelpUrl("");
+      }
+    };
+
+    Blockly.JavaScript['sprite_move'] = function(block) {
+      var dropdown_sprite = block.getFieldValue('SPRITE');
+      var value_steps = Blockly.JavaScript.valueToCode(block, 'STEPS', Blockly.JavaScript.ORDER_ATOMIC);
+      var code = `moveSprite('${dropdown_sprite}', ${value_steps});\n`;
+      return code;
+    };
+
+    Blockly.Blocks['sprite_turn'] = {
+      init: function() {
+        this.appendValueInput("DEGREES")
+            .setCheck("Number")
+            .appendField("turn")
+            .appendField(new Blockly.FieldDropdown(getSpriteNames), "SPRITE")
+            .appendField("degrees");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(210);
+        this.setTooltip("Turns the sprite by a specified number of degrees.");
+        this.setHelpUrl("");
+      }
+    };
+
+    Blockly.JavaScript['sprite_turn'] = function(block) {
+      var dropdown_sprite = block.getFieldValue('SPRITE');
+      var value_degrees = Blockly.JavaScript.valueToCode(block, 'DEGREES', Blockly.JavaScript.ORDER_ATOMIC);
+      var code = `turnSprite('${dropdown_sprite}', ${value_degrees});\n`;
+      return code;
+    };
+
+    Blockly.Blocks['sprite_set_position'] = {
+      init: function() {
+        this.appendValueInput("X_POS")
+            .setCheck("Number")
+            .appendField("set")
+            .appendField(new Blockly.FieldDropdown(getSpriteNames), "SPRITE")
+            .appendField("x position to");
+        this.appendValueInput("Y_POS")
+            .setCheck("Number")
+            .appendField("and y position to");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(210);
+        this.setTooltip("Sets the sprite to a specified (x, y) position.");
+        this.setHelpUrl("");
+      }
+    };
+
+    Blockly.JavaScript['sprite_set_position'] = function(block) {
+      var dropdown_sprite = block.getFieldValue('SPRITE');
+      var value_x = Blockly.JavaScript.valueToCode(block, 'X_POS', Blockly.JavaScript.ORDER_ATOMIC);
+      var value_y = Blockly.JavaScript.valueToCode(block, 'Y_POS', Blockly.JavaScript.ORDER_ATOMIC);
+      var code = `setSpritePosition('${dropdown_sprite}', ${value_x}, ${value_y});\n`;
+      return code;
+    };
+
+    Blockly.Blocks['sprite_change_color'] = {
+      init: function() {
+        this.appendDummyInput()
+            .appendField("change")
+            .appendField(new Blockly.FieldDropdown(getSpriteNames), "SPRITE")
+            .appendField("color effect by");
+        this.appendValueInput("COLOR")
+            .setCheck("Number");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(210);
+        this.setTooltip("Changes the sprite's color effect by a specified amount.");
+        this.setHelpUrl("");
+      }
+    };
+
+    Blockly.JavaScript['sprite_change_color'] = function(block) {
+      var dropdown_sprite = block.getFieldValue('SPRITE');
+      var value_color = Blockly.JavaScript.valueToCode(block, 'COLOR', Blockly.JavaScript.ORDER_ATOMIC);
+      var code = `changeSpriteColor('${dropdown_sprite}', ${value_color});\n`;
+      return code;
+    };
+
+    Blockly.Blocks['sprite_show'] = {
+      init: function() {
+        this.appendDummyInput()
+            .appendField("show")
+            .appendField(new Blockly.FieldDropdown(getSpriteNames), "SPRITE");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(210);
+        this.setTooltip("Makes the sprite visible.");
+        this.setHelpUrl("");
+      }
+    };
+
+    Blockly.JavaScript['sprite_show'] = function(block) {
+      var dropdown_sprite = block.getFieldValue('SPRITE');
+      var code = `showSprite('${dropdown_sprite}');\n`;
+      return code;
+    };
+
+    Blockly.Blocks['sprite_hide'] = {
+      init: function() {
+        this.appendDummyInput()
+            .appendField("hide")
+            .appendField(new Blockly.FieldDropdown(getSpriteNames), "SPRITE");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(210);
+        this.setTooltip("Hides the sprite.");
+        this.setHelpUrl("");
+      }
+    };
+
+    Blockly.JavaScript['sprite_hide'] = function(block) {
+      var dropdown_sprite = block.getFieldValue('SPRITE');
+      var code = `hideSprite('${dropdown_sprite}');\n`;
+      return code;
+    };
+
+    // ===========================
+    // Utility Function to Get Sprite Names
+    // ===========================
+    function getSpriteNames() {
+      let sprites = Object.keys(spritesData);
+      if (sprites.length === 0) {
+        return [["No Sprite", "none"]];
+      }
+      return sprites.map(sprite => [sprite, sprite]);
+    }
+
+    // ===========================
+    // User Authentication Logic
+    // ===========================
+    const authModal = document.getElementById('authModal');
+    const authTitle = document.getElementById('authTitle');
+    const authForm = document.getElementById('authForm');
+    const authButton = document.getElementById('authButton');
+    const toggleAuth = document.getElementById('toggleAuth');
+    const toggleLink = document.getElementById('toggleLink');
+    const closeModal = document.getElementsByClassName('close')[0];
+
+    const loginBtn = document.getElementById('loginBtn');
+    const registerBtn = document.getElementById('registerBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const currentUserP = document.getElementById('currentUser');
+    const projectControls = document.getElementById('projectControls');
+    const teacherControls = document.getElementById('teacherControls');
+    const sharedProjectsSection = document.getElementById('shared-projects');
+    const spriteArea = document.getElementById('spriteArea');
+    const studentAccountsList = document.getElementById('studentAccountsList');
+
+    let isLogin = true;
+    let currentUser = null;
+    let currentUserRole = 'student'; // Default role
+
+    // Open Login Modal
+    loginBtn.onclick = function() {
+      isLogin = true;
+      authTitle.innerText = "Login";
+      authButton.innerText = "Login";
+      toggleAuth.innerHTML = `Don't have an account? <a href="#" id="toggleLink">Register here</a>`;
+      authModal.style.display = "block";
+    }
+
+    // Open Register Modal
+    registerBtn.onclick = function() {
+      isLogin = false;
+      authTitle.innerText = "Register";
+      authButton.innerText = "Register";
+      toggleAuth.innerHTML = `Already have an account? <a href="#" id="toggleLink">Login here</a>`;
+      authModal.style.display = "block";
+    }
+
+    // Close Modal
+    closeModal.onclick = function() {
+      authModal.style.display = "none";
+    }
+
+    // Toggle between Login and Register
+    toggleLink.onclick = function(e) {
+      e.preventDefault();
+      isLogin = !isLogin;
+      authTitle.innerText = isLogin ? "Login" : "Register";
+      authButton.innerText = isLogin ? "Login" : "Register";
+      toggleAuth.innerHTML = isLogin ? `Don't have an account? <a href="#" id="toggleLink">Register here</a>` :
+                                      `Already have an account? <a href="#" id="toggleLink">Login here</a>`;
+    }
+
+    // Handle Authentication Form Submission
+    authForm.onsubmit = function(e) {
+      e.preventDefault();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value.trim();
+      const roleElements = document.getElementsByName('role');
+      let selectedRole = 'student'; // Default role
+
+      for (let i = 0; i < roleElements.length; i++) {
+        if (roleElements[i].checked) {
+          selectedRole = roleElements[i].value;
+          break;
+        }
+      }
+
+      if (isLogin) {
+        // Login
+        loginUser(email, password);
+      } else {
+        // Register
+        registerUser(email, password, selectedRole);
+      }
+    }
+
+    // Function to Register User
+    function registerUser(email, password, role) {
+      if (localStorage.getItem(`user_${email}`)) {
+        alert("User already exists. Please login.");
+        return;
+      }
+
+      // Save user to localStorage
+      const userData = { email: email, password: password, role: role };
+      localStorage.setItem(`user_${email}`, JSON.stringify(userData));
+
+      alert(`Registration successful! You are registered as a ${capitalizeFirstLetter(role)}.`);
+      authModal.style.display = "none";
+    }
+
+    // Function to Login User
+    function loginUser(email, password) {
+      const userData = JSON.parse(localStorage.getItem(`user_${email}`));
+      if (!userData) {
+        alert("User does not exist. Please register.");
+        return;
+      }
+      if (userData.password !== password) {
+        alert("Incorrect password.");
+        return;
+      }
+      currentUser = email;
+      currentUserRole = userData.role;
+      updateUIOnLogin();
+      authModal.style.display = "none";
+    }
+
+    // Function to Update UI After Login
+    function updateUIOnLogin() {
+      currentUserP.innerText = `Logged in as: ${currentUser} (${capitalizeFirstLetter(currentUserRole)})`;
+      loginBtn.style.display = "none";
+      registerBtn.style.display = "none";
+      logoutBtn.style.display = "block";
+      projectControls.style.display = "block";
+      sharedProjectsSection.style.display = "block";
+      spriteArea.style.display = "block";
+
+      if (currentUserRole === 'teacher') {
+        teacherControls.style.display = "block";
+        loadStudentAccounts();
+      } else {
+        teacherControls.style.display = "none";
+      }
+      loadUserProjects();
+      loadSharedProjects();
+      initializeEventListeners();
+      loadSprites();
+      localStorage.setItem('currentUser', currentUser);
+    }
+
+    // Logout Functionality
+    logoutBtn.onclick = function() {
+      currentUser = null;
+      currentUserRole = 'student';
+      currentUserP.innerText = "";
+      loginBtn.style.display = "block";
+      registerBtn.style.display = "block";
+      logoutBtn.style.display = "none";
+      projectControls.style.display = "none";
+      teacherControls.style.display = "none";
+      sharedProjectsSection.style.display = "none";
+      spriteArea.style.display = "none";
+      document.getElementById('sharedProjectsList').innerHTML = "";
+      document.getElementById('myProjectList').innerHTML = "";
+      document.getElementById('output').innerHTML = "";
+      document.getElementById('codeArea').value = "";
+      workspace.clear();
+      studentAccountsList.innerHTML = "";
+      spritesData = {}; // Reset sprites
+      updateSpriteDropdowns();
+      localStorage.removeItem('currentUser');
+    }
+
+    // Utility Function to Capitalize First Letter
+    function capitalizeFirstLetter(string) {
+      return string.charAt(0).toUpperCase() + string.slice(1);
+    }
+
+    // ===========================
+    // Project Management Logic
+    // ===========================
+    const greenFlagBtn = document.getElementById('greenFlagBtn');
+    const saveBtn = document.getElementById('saveBtn');
+    const loadBtn = document.getElementById('loadBtn');
+    const shareBtn = document.getElementById('shareBtn');
+    const viewSharedBtn = document.getElementById('viewSharedBtn');
+    const myProjectList = document.createElement('div');
+    myProjectList.id = 'myProjectList';
+    projectControls.appendChild(document.createElement('h3')).innerText = "My Projects:";
+    projectControls.appendChild(myProjectList);
+    const sharedProjectsList = document.getElementById('sharedProjectsList');
+    const importFileInput = document.getElementById('importFile');
+    const codeArea = document.getElementById('codeArea');
+    const outputArea = document.getElementById('output');
+
+    // Initialize Sprites Data
+    let spritesData = {};
+
+    // Initialize event listeners for green flag and title
+    function initializeEventListeners() {
+      // Green Flag Button Listener
+      greenFlagBtn.onclick = function() {
+        runButtonClick();
+      };
+
+      // Title Click Listener
+      document.getElementById('appTitle').addEventListener('click', function() {
+        // Blocks connected to "when title clicked" handle their own execution
+      });
+    }
+
+    // Run Code Functionality
+    function runButtonClick() {
+      // Clear previous output
+      outputArea.innerHTML = '';
+
+      // Override console.log
+      console.log = function(message) {
+        var msg = typeof message === 'object' ? JSON.stringify(message) : message;
+        outputArea.innerHTML += msg + '<br>';
+      };
+
+      try {
+        // Generate JavaScript code from blocks
+        var code = Blockly.JavaScript.workspaceToCode(workspace);
+        codeArea.value = code;
+        // Execute the generated code
+        eval(code);
+      } catch (e) {
+        outputArea.innerHTML += `<span style="color: red;">Error: ${e.message}</span>`;
+      }
+    }
+
+    // Save Project
+    saveBtn.onclick = function() {
+      if (!currentUser) {
+        alert("Please login to save projects.");
+        return;
+      }
+      const projectName = prompt("Enter project name:");
+      if (!projectName) return;
+
+      const xml = Blockly.Xml.workspaceToDom(workspace);
+      const xmlText = Blockly.Xml.domToText(xml);
+
+      // Retrieve existing projects
+      let projects = JSON.parse(localStorage.getItem(`projects_${currentUser}`)) || {};
+
+      // Save project
+      projects[projectName] = { xml: xmlText, shared: false };
+      localStorage.setItem(`projects_${currentUser}`, JSON.stringify(projects));
+
+      alert("Project saved successfully!");
+      loadUserProjects();
+    }
+
+    // Load Project
+    loadBtn.onclick = function() {
+      if (!currentUser) {
+        alert("Please login to load projects.");
+        return;
+      }
+      loadUserProjects();
+    }
+
+    // Share Project
+    shareBtn.onclick = function() {
+      if (!currentUser) {
+        alert("Please login to share projects.");
+        return;
+      }
+      const projectName = prompt("Enter project name to share:");
+      if (!projectName) return;
+
+      let projects = JSON.parse(localStorage.getItem(`projects_${currentUser}`)) || {};
+      if (!projects[projectName]) {
+        alert("Project not found.");
+        return;
+      }
+
+      projects[projectName].shared = true;
+      localStorage.setItem(`projects_${currentUser}`, JSON.stringify(projects));
+
+      // Add to sharedProjects
+      let sharedProjects = JSON.parse(localStorage.getItem('sharedProjects') || '[]');
+      sharedProjects.push({ owner: currentUser, name: projectName, xml: projects[projectName].xml });
+      localStorage.setItem('sharedProjects', JSON.stringify(sharedProjects));
+
+      alert("Project shared successfully!");
+      loadSharedProjects();
+    }
+
+    // View Shared Projects
+    viewSharedBtn.onclick = function() {
+      loadSharedProjects();
+    }
+
+    // Load User's Projects
+    function loadUserProjects() {
+      if (!currentUser) return;
+      let projects = JSON.parse(localStorage.getItem(`projects_${currentUser}`)) || {};
+      myProjectList.innerHTML = "";
+
+      if (Object.keys(projects).length === 0) {
+        myProjectList.innerHTML = "<p>No projects found.</p>";
+        return;
+      }
+
+      for (let projectName in projects) {
+        let project = projects[projectName];
+        let div = document.createElement('div');
+        div.className = 'project-item';
+        div.innerHTML = `<span>${projectName}</span>`;
+
+        // Add Share Button for Teachers
+        if (currentUserRole === 'teacher') {
+          let shareBtn = document.createElement('button');
+          shareBtn.className = 'share-button';
+          shareBtn.innerText = project.shared ? "Unshare" : "Share";
+          shareBtn.onclick = function(e) {
+            e.stopPropagation();
+            project.shared = !project.shared;
+            projects[projectName].shared = project.shared;
+            localStorage.setItem(`projects_${currentUser}`, JSON.stringify(projects));
+
+            // Update sharedProjects
+            let sharedProjects = JSON.parse(localStorage.getItem('sharedProjects') || '[]');
+            if (project.shared) {
+              sharedProjects.push({ owner: currentUser, name: projectName, xml: project.xml });
+            } else {
+              sharedProjects = sharedProjects.filter(p => !(p.owner === currentUser && p.name === projectName));
+            }
+            localStorage.setItem('sharedProjects', JSON.stringify(sharedProjects));
+
+            alert(`Project ${project.shared ? "shared" : "unshared"} successfully!`);
+            loadUserProjects();
+            loadSharedProjects();
+          }
+          div.appendChild(shareBtn);
+        }
+
+        // Add Delete Button
+        let deleteBtn = document.createElement('button');
+        deleteBtn.className = 'delete-button';
+        deleteBtn.innerText = "Delete";
+        deleteBtn.onclick = function(e) {
+          e.stopPropagation();
+          if (confirm(`Are you sure you want to delete the project "${projectName}"?`)) {
+            delete projects[projectName];
+            localStorage.setItem(`projects_${currentUser}`, JSON.stringify(projects));
+            alert("Project deleted.");
+            loadUserProjects();
+          }
+        }
+        div.appendChild(deleteBtn);
+
+        // Click to Load Project
+        div.onclick = function() {
+          loadProject(project.xml);
+        }
+
+        myProjectList.appendChild(div);
+      }
+    }
+
+    // Load Shared Projects
+    function loadSharedProjects() {
+      if (!currentUser) return;
+      let sharedProjects = JSON.parse(localStorage.getItem('sharedProjects') || '[]');
+      sharedProjectsList.innerHTML = "";
+
+      if (sharedProjects.length === 0) {
+        sharedProjectsList.innerHTML = "<p>No shared projects available.</p>";
+        return;
+      }
+
+      sharedProjects.forEach((project, index) => {
+        let div = document.createElement('div');
+        div.className = 'project-item';
+        div.innerHTML = `<span>${project.name} (by ${project.owner})</span>`;
+
+        // Add Remix Button
+        let remixBtn = document.createElement('button');
+        remixBtn.className = 'remix-button';
+        remixBtn.innerText = "Remix";
+        remixBtn.onclick = function(e) {
+          e.stopPropagation();
+          loadProject(project.xml);
+          alert("Project loaded for remixing. Don't forget to save it with a new name!");
+        }
+        div.appendChild(remixBtn);
+
+        // Click to Load Project
+        div.onclick = function() {
+          loadProject(project.xml);
+        }
+
+        sharedProjectsList.appendChild(div);
+      });
+    }
+
+    // Load Project into Workspace
+    function loadProject(xmlText) {
+      const xml = Blockly.Xml.textToDom(xmlText);
+      Blockly.Xml.clearWorkspaceAndLoadFromXml(xml, workspace);
+      alert("Project loaded!");
+    }
+
+    // ===========================
+    // Teacher Account Creation Logic
+    // ===========================
+    const createStudentBtn = document.getElementById('createStudentBtn');
+
+    createStudentBtn.onclick = function() {
+      if (currentUserRole !== 'teacher') {
+        alert("Only teachers can create student accounts.");
+        return;
+      }
+      const studentEmail = prompt("Enter student email (dummy email):");
+      const studentPassword = prompt("Enter student password:");
+
+      if (!studentEmail || !studentPassword) {
+        alert("Email and password cannot be empty.");
+        return;
+      }
+
+      if (localStorage.getItem(`user_${studentEmail}`)) {
+        alert("A user with this email already exists.");
+        return;
+      }
+
+      // Create student account with dummy email
+      const userData = { email: studentEmail, password: studentPassword, role: 'student' };
+      localStorage.setItem(`user_${studentEmail}`, JSON.stringify(userData));
+
+      alert(`Student account created for ${studentEmail}.`);
+      loadStudentAccounts();
+    }
+
+    function loadStudentAccounts() {
+      studentAccountsList.innerHTML = "";
+      let studentUsers = [];
+
+      for (let key in localStorage) {
+        if (key.startsWith('user_')) {
+          let user = JSON.parse(localStorage.getItem(key));
+          if (user.role === 'student') {
+            studentUsers.push(user.email);
+          }
+        }
+      }
+
+      if (studentUsers.length === 0) {
+        studentAccountsList.innerHTML = "<p>No student accounts found.</p>";
+        return;
+      }
+
+      studentUsers.forEach(email => {
+        let div = document.createElement('div');
+        div.className = 'account-item';
+        div.innerText = email;
+        studentAccountsList.appendChild(div);
+      });
+    }
+
+    // ===========================
+    // Sprite Management Logic
+    // ===========================
+    const addSpriteBtn = document.getElementById('addSpriteBtn');
+    const spriteListDiv = document.getElementById('spriteList');
+
+    addSpriteBtn.onclick = function() {
+      const spriteName = prompt("Enter sprite name:");
+      if (!spriteName) return;
+      if (spritesData[spriteName]) {
+        alert("Sprite name already exists.");
+        return;
+      }
+
+      // Create sprite element
+      let sprite = document.createElement('div');
+      sprite.id = spriteName;
+      sprite.className = 'sprite';
+      sprite.style.left = '100px';
+      sprite.style.top = '100px';
+      sprite.style.backgroundColor = getRandomColor();
+      spriteArea.appendChild(sprite);
+
+      // Add to spritesData
+      spritesData[spriteName] = { x: 100, y: 100, color: sprite.style.backgroundColor, rotation: 0 };
+
+      // Update dropdowns
+      updateSpriteDropdowns();
+
+      // Add to sprite list
+      let spriteDiv = document.createElement('div');
+      spriteDiv.innerText = spriteName;
+      spriteListDiv.appendChild(spriteDiv);
+    }
+
+    // Update Sprite Dropdowns in Blocks
+    function updateSpriteDropdowns() {
+      // Refresh all dropdown fields related to sprites
+      Blockly.Xml.domToWorkspace(Blockly.Xml.textToDom(`<xml xmlns="https://developers.google.com/blockly/xml">
+                      <category name="Events" colour="120">
+                        <block type="event_when_green_flag_clicked"></block>
+                        <block type="event_when_title_clicked"></block>
+                        <block type="event_when_sprite_clicked"></block>
+                      </category>
+                      <category name="Control" colour="%{BKY_LOGIC_HUE}">
+                        <block type="controls_ifelse"></block>
+                        <block type="controls_repeat_ext"></block>
+                        <block type="controls_whileUntil"></block>
+                        <block type="controls_for"></block>
+                        <block type="controls_forEach"></block>
+                        <block type="controls_flow_statements"></block>
+                      </category>
+                      <category name="Math" colour="%{BKY_MATH_HUE}">
+                        <block type="math_number">
+                          <field name="NUM">0</field>
+                        </block>
+                        <block type="math_arithmetic"></block>
+                        <block type="math_single"></block>
+                        <block type="math_trig"></block>
+                        <block type="math_constant"></block>
+                        <block type="math_number_property"></block>
+                        <block type="math_round"></block>
+                        <block type="math_on_list"></block>
+                        <block type="math_modulo"></block>
+                        <block type="math_constrain"></block>
+                        <block type="math_random_int"></block>
+                        <block type="math_random_float"></block>
+                      </category>
+                      <category name="Text" colour="%{BKY_TEXTS_HUE}">
+                        <block type="text"></block>
+                        <block type="text_join"></block>
+                        <block type="text_append"></block>
+                        <block type="text_length"></block>
+                        <block type="text_isEmpty"></block>
+                        <block type="text_indexOf"></block>
+                        <block type="text_charAt"></block>
+                        <block type="text_getSubstring"></block>
+                        <block type="text_changeCase"></block>
+                        <block type="text_trim"></block>
+                        <block type="text_print"></block>
+                        <block type="text_prompt_ext"></block>
+                      </category>
+                      <category name="Variables" colour="%{BKY_VARIABLES_HUE}" custom="VARIABLE"></category>
+                      <category name="Functions" colour="%{BKY_PROCEDURES_HUE}" custom="PROCEDURE"></category>
+                      <category name="Sprites" colour="210">
+                        <block type="sprite_move"></block>
+                        <block type="sprite_turn"></block>
+                        <block type="sprite_set_position"></block>
+                        <block type="sprite_change_color"></block>
+                        <block type="sprite_show"></block>
+                        <block type="sprite_hide"></block>
+                      </category>
+                      <category name="Custom" colour="290">
+                        <block type="display_image"></block>
+                      </category>
+                    </xml>`), workspace);
+    }
+
+    // Load Sprites from spritesData
+    function loadSprites() {
+      spriteListDiv.innerHTML = "";
+      for (let spriteName in spritesData) {
+        let spriteDiv = document.createElement('div');
+        spriteDiv.innerText = spriteName;
+        spriteListDiv.appendChild(spriteDiv);
+      }
+      updateSpriteDropdowns();
+    }
+
+    // ===========================
+    // Sprite Control Functions
+    // ===========================
+    function moveSprite(spriteName, steps) {
+      if (!spritesData[spriteName]) return;
+      spritesData[spriteName].x += steps;
+      document.getElementById(spriteName).style.left = `${spritesData[spriteName].x}px`;
+    }
+
+    function turnSprite(spriteName, degrees) {
+      if (!spritesData[spriteName]) return;
+      spritesData[spriteName].rotation += degrees;
+      document.getElementById(spriteName).style.transform = `rotate(${spritesData[spriteName].rotation}deg)`;
+    }
+
+    function setSpritePosition(spriteName, x, y) {
+      if (!spritesData[spriteName]) return;
+      spritesData[spriteName].x = x;
+      spritesData[spriteName].y = y;
+      document.getElementById(spriteName).style.left = `${x}px`;
+      document.getElementById(spriteName).style.top = `${y}px`;
+    }
+
+    function changeSpriteColor(spriteName, change) {
+      if (!spritesData[spriteName]) return;
+      // Simple color change logic (e.g., cycling through colors)
+      let currentColor = spritesData[spriteName].color;
+      let newColor = getRandomColor();
+      spritesData[spriteName].color = newColor;
+      document.getElementById(spriteName).style.backgroundColor = newColor;
+    }
+
+    function showSprite(spriteName) {
+      if (!spritesData[spriteName]) return;
+      document.getElementById(spriteName).style.display = 'block';
+    }
+
+    function hideSprite(spriteName) {
+      if (!spritesData[spriteName]) return;
+      document.getElementById(spriteName).style.display = 'none';
+    }
+
+    function displayImage(url) {
+      var img = document.createElement('img');
+      img.src = url;
+      img.style.maxWidth = '100%';
+      outputArea.appendChild(img);
+    }
+
+    // Utility Function to Get Random Color
+    function getRandomColor() {
+      const letters = '0123456789ABCDEF';
+      let color = '#';
+      for (let i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+      }
+      return color;
+    }
+
+    // ===========================
+    // User Interface Enhancements
+    // ===========================
+    // Add Application Title
+    // Already added in HTML
+
+    // ===========================
+    // Initial Setup on Page Load
+    // ===========================
+    window.onload = function() {
+      // Check if a user is already logged in (simple persistence)
+      const savedUser = localStorage.getItem('currentUser');
+      if (savedUser) {
+        const userData = JSON.parse(localStorage.getItem(`user_${savedUser}`));
+        if (userData) {
+          currentUser = savedUser;
+          currentUserRole = userData.role;
+          updateUIOnLogin();
+        }
+      }
+    }
+
+    // ===========================
+    // Handle Window Click to Close Modal
+    // ===========================
+    window.onclick = function(event) {
+      if (event.target == authModal) {
+        authModal.style.display = "none";
+      }
+    }
+
+    // ===========================
+    // Shared Projects Logic
+    // ===========================
+    // (Handled in loadSharedProjects function)
+
+  </script>
+
+</body>
+</html>
