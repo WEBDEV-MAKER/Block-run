@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Pure HTML Block Coding Platform</title>
+  <style>
+    /* Basic Styling */
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      height: 100vh;
+      margin: 0;
+    }
+    #blocklyDiv {
+      height: 100%;
+      width: 70%;
+      border-right: 2px solid #ccc;
+    }
+    #controls {
+      width: 30%;
+      padding: 20px;
+      box-sizing: border-box;
+      overflow-y: auto;
+    }
+    #codeArea {
+      width: 100%;
+      height: 200px;
+      margin-top: 20px;
+      padding: 10px;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      background-color: #f9f9f9;
+      overflow: auto;
+      white-space: pre-wrap;
+    }
+    #output {
+      width: 100%;
+      height: 200px;
+      margin-top: 20px;
+      padding: 10px;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      background-color: #f1f1f1;
+      overflow: auto;
+      white-space: pre-wrap;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 5px 0;
+      font-size: 16px;
+      width: 100%;
+      cursor: pointer;
+    }
+    /* Modal Styles */
+    .modal {
+      display: none; 
+      position: fixed; 
+      z-index: 100; 
+      padding-top: 100px; 
+      left: 0;
+      top: 0;
+      width: 100%; 
+      height: 100%; 
+      overflow: auto; 
+      background-color: rgba(0,0,0,0.4); 
+    }
+    .modal-content {
+      background-color: #fefefe;
+      margin: auto;
+      padding: 20px;
+      border: 1px solid #888;
+      width: 300px;
+      text-align: center;
+    }
+    .close {
+      color: #aaa;
+      float: right;
+      font-size: 24px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .close:hover,
+    .close:focus {
+      color: black;
+    }
+    /* Project List Styles */
+    .project-item {
+      padding: 10px;
+      border-bottom: 1px solid #ddd;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .project-item:hover {
+      background-color: #eaeaea;
+    }
+    .share-button {
+      padding: 5px 10px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    /* Hidden File Input */
+    #importFile {
+      display: none;
+    }
+  </style>
+  <!-- Include Blockly -->
+  <script src="https://unpkg.com/blockly/blockly.min.js"></script>
+</head>
+<body>
+
+  <!-- Blockly Workspace -->
+  <div id="blocklyDiv"></div>
+
+  <!-- Controls and Output -->
+  <div id="controls">
+    <!-- Authentication Section -->
+    <div id="authSection">
+      <h2>Welcome</h2>
+      <button id="loginBtn">Login</button>
+      <button id="registerBtn">Register</button>
+      <button id="logoutBtn" style="display:none;">Logout</button>
+      <p id="currentUser"></p>
+    </div>
+
+    <!-- Project Controls -->
+    <div id="projectControls" style="display:none;">
+      <button id="runButton">Run Code</button>
+      <button id="saveButton">Save Project</button>
+      <button id="exportButton">Export Project</button>
+      <button id="importButton">Import Project</button>
+      <button id="viewSharedProjectsButton">View Shared Projects</button>
+      
+      <h3>Generated JavaScript Code:</h3>
+      <textarea id="codeArea" readonly></textarea>
+      
+      <h3>Output:</h3>
+      <div id="output"></div>
+      
+      <h3>My Projects:</h3>
+      <div id="myProjectList"></div>
+      
+      <h3>Shared Projects:</h3>
+      <div id="sharedProjectList"></div>
+    </div>
+  </div>
+
+  <!-- Authentication Modal -->
+  <div id="authModal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h2 id="authTitle">Login</h2>
+      <form id="authForm">
+        <input type="email" id="email" placeholder="Email" required><br><br>
+        <input type="password" id="password" placeholder="Password" required><br><br>
+        <button type="submit" id="authButton">Login</button>
+      </form>
+      <p id="toggleAuth">Don't have an account? <a href="#" id="toggleLink">Register here</a></p>
+    </div>
+  </div>
+
+  <!-- Hidden File Input for Importing Projects -->
+  <input type="file" id="importFile" accept=".json">
+
+  <script>
+    // ===========================
+    // Blockly Initialization
+    // ===========================
+    var workspace = Blockly.inject('blocklyDiv',
+      { 
+        toolbox: `<xml xmlns="https://developers.google.com/blockly/xml">
+                    <category name="Logic" colour="%{BKY_LOGIC_HUE}">
+                      <block type="controls_if"></block>
+                      <block type="logic_compare"></block>
+                      <block type="logic_operation"></block>
+                      <block type="logic_boolean"></block>
+                      <block type="logic_null"></block>
+                      <block type="logic_ternary"></block>
+                    </category>
+                    <category name="Loops" colour="%{BKY_LOOPS_HUE}">
+                      <block type="controls_repeat_ext">
+                        <value name="TIMES">
+                          <shadow type="math_number">
+                            <field name="NUM">10</field>
+                          </shadow>
+                        </value>
+                      </block>
+                      <block type="controls_whileUntil"></block>
+                      <block type="controls_for">
+                        <value name="FROM">
+                          <shadow type="math_number">
+                            <field name="NUM">1</field>
+                          </shadow>
+                        </value>
+                        <value name="TO">
+                          <shadow type="math_number">
+                            <field name="NUM">10</field>
+                          </shadow>
+                        </value>
+                        <value name="BY">
+                          <shadow type="math_number">
+                            <field name="NUM">1</field>
+                          </shadow>
+                        </value>
+                      </block>
+                      <block type="controls_forEach"></block>
+                      <block type="controls_flow_statements"></block>
+                    </category>
+                    <category name="Math" colour="%{BKY_MATH_HUE}">
+                      <block type="math_number">
+                        <field name="NUM">123</field>
+                      </block>
+                      <block type="math_arithmetic"></block>
+                      <block type="math_single"></block>
+                      <block type="math_trig"></block>
+                      <block type="math_constant"></block>
+                      <block type="math_number_property"></block>
+                      <block type="math_round"></block>
+                      <block type="math_on_list"></block>
+                      <block type="math_modulo"></block>
+                      <block type="math_constrain"></block>
+                      <block type="math_random_int"></block>
+                      <block type="math_random_float"></block>
+                      <block type="math_atan2"></block>
+                    </category>
+                    <category name="Text" colour="%{BKY_TEXTS_HUE}">
+                      <block type="text"></block>
+                      <block type="text_join"></block>
+                      <block type="text_append">
+                        <value name="TEXT">
+                          <shadow type="text"></shadow>
+                        </value>
+                      </block>
+                      <block type="text_length"></block>
+                      <block type="text_isEmpty"></block>
+                      <block type="text_indexOf">
+                        <value name="FIND">
+                          <shadow type="text"></shadow>
+                        </value>
+                      </block>
+                      <block type="text_charAt">
+                        <value name="WHERE">
+                          <shadow type="text_indexOf">
+                            <field name="END">FIRST</field>
+                          </shadow>
+                        </value>
+                      </block>
+                      <block type="text_getSubstring">
+                        <value name="WHERE1">
+                          <shadow type="text_indexOf">
+                            <field name="END">FIRST</field>
+                          </shadow>
+                        </value>
+                        <value name="WHERE2">
+                          <shadow type="text_indexOf">
+                            <field name="END">LAST</field>
+                          </shadow>
+                        </value>
+                      </block>
+                      <block type="text_changeCase"></block>
+                      <block type="text_trim"></block>
+                      <block type="text_print"></block>
+                      <block type="text_prompt_ext">
+                        <value name="TEXT">
+                          <shadow type="text"></shadow>
+                        </value>
+                      </block>
+                    </category>
+                    <category name="Variables" colour="%{BKY_VARIABLES_HUE}" custom="VARIABLE"></category>
+                    <category name="Functions" colour="%{BKY_PROCEDURES_HUE}" custom="PROCEDURE"></category>
+                    <category name="Custom" colour="210">
+                      <block type="display_image"></block>
+                    </category>
+                  </xml>`
+      });
+
+    // ===========================
+    // Custom Blocks Definition
+    // ===========================
+    // Define a custom block for displaying images
+    Blockly.Blocks['display_image'] = {
+      init: function() {
+        this.appendDummyInput()
+            .appendField("Display Image")
+            .appendField(new Blockly.FieldTextInput("https://"), "IMAGE_URL");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(160);
+        this.setTooltip("Displays an image from a specified URL.");
+        this.setHelpUrl("");
+      }
+    };
+
+    // Define how the custom block translates to JavaScript
+    Blockly.JavaScript['display_image'] = function(block) {
+      var image_url = block.getFieldValue('IMAGE_URL');
+      var code = `displayImage("${image_url}");\n`;
+      return code;
+    };
+
+    // ===========================
+    // Custom Block Functionality
+    // ===========================
+    function displayImage(url) {
+      var img = document.createElement('img');
+      img.src = url;
+      img.style.maxWidth = '100%';
+      document.getElementById('output').appendChild(img);
+    }
+
+    // ===========================
+    // User Authentication Logic
+    // ===========================
+    const authModal = document.getElementById('authModal');
+    const authTitle = document.getElementById('authTitle');
+    const authForm = document.getElementById('authForm');
+    const authButton = document.getElementById('authButton');
+    const toggleAuth = document.getElementById('toggleAuth');
+    const toggleLink = document.getElementById('toggleLink');
+    const closeModal = document.getElementsByClassName('close')[0];
+
+    const loginBtn = document.getElementById('loginBtn');
+    const registerBtn = document.getElementById('registerBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const currentUserP = document.getElementById('currentUser');
+    const projectControls = document.getElementById('projectControls');
+
+    let isLogin = true;
+    let currentUser = null;
+    let currentUserRole = 'student'; // Default role
+
+    // Open Login Modal
+    loginBtn.onclick = function() {
+      isLogin = true;
+      authTitle.innerText = "Login";
+      authButton.innerText = "Login";
+      toggleAuth.innerHTML = `Don't have an account? <a href="#" id="toggleLink">Register here</a>`;
+      authModal.style.display = "block";
+    }
+
+    // Open Register Modal
+    registerBtn.onclick = function() {
+      isLogin = false;
+      authTitle.innerText = "Register";
+      authButton.innerText = "Register";
+      toggleAuth.innerHTML = `Already have an account? <a href="#" id="toggleLink">Login here</a>`;
+      authModal.style.display = "block";
+    }
+
+    // Close Modal
+    closeModal.onclick = function() {
+      authModal.style.display = "none";
+    }
+
+    // Toggle between Login and Register
+    toggleLink.onclick = function(e) {
+      e.preventDefault();
+      isLogin = !isLogin;
+      authTitle.innerText = isLogin ? "Login" : "Register";
+      authButton.innerText = isLogin ? "Login" : "Register";
+      toggleAuth.innerHTML = isLogin ? `Don't have an account? <a href="#" id="toggleLink">Register here</a>` :
+                                      `Already have an account? <a href="#" id="toggleLink">Login here</a>`;
+    }
+
+    // Handle Authentication Form Submission
+    authForm.onsubmit = function(e) {
+      e.preventDefault();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value.trim();
+
+      if (isLogin) {
+        // Login
+        loginUser(email, password);
+      } else {
+        // Register
+        registerUser(email, password);
+      }
+    }
+
+    // Function to Register User
+    function registerUser(email, password) {
+      if (localStorage.getItem(`user_${email}`)) {
+        alert("User already exists. Please login.");
+        return;
+      }
+      // By default, first registered user is a Teacher
+      let role = 'student';
+      if (localStorage.getItem('users')) {
+        let users = JSON.parse(localStorage.getItem('users'));
+        if (Object.keys(users).length === 0) {
+          role = 'teacher';
+        }
+      }
+      // Save user to localStorage
+      const userData = { email: email, password: password, role: role };
+      localStorage.setItem(`user_${email}`, JSON.stringify(userData));
+
+      // Update users list
+      let users = JSON.parse(localStorage.getItem('users')) || {};
+      users[email] = { role: role };
+      localStorage.setItem('users', JSON.stringify(users));
+
+      alert(`Registration successful! You are registered as a ${role}.`);
+      authModal.style.display = "none";
+    }
+
+    // Function to Login User
+    function loginUser(email, password) {
+      const userData = JSON.parse(localStorage.getItem(`user_${email}`));
+      if (!userData) {
+        alert("User does not exist. Please register.");
+        return;
+      }
+      if (userData.password !== password) {
+        alert("Incorrect password.");
+        return;
+      }
+      currentUser = email;
+      currentUserRole = userData.role;
+      updateUIOnLogin();
+      authModal.style.display = "none";
+    }
+
+    // Function to Update UI After Login
+    function updateUIOnLogin() {
+      currentUserP.innerText = `Logged in as: ${currentUser} (${capitalizeFirstLetter(currentUserRole)})`;
+      loginBtn.style.display = "none";
+      registerBtn.style.display = "none";
+      logoutBtn.style.display = "block";
+      projectControls.style.display = "block";
+      loadUserProjects();
+      if (currentUserRole === 'teacher') {
+        loadSharedProjects();
+      }
+    }
+
+    // Logout Functionality
+    logoutBtn.onclick = function() {
+      currentUser = null;
+      currentUserRole = 'student';
+      currentUserP.innerText = "";
+      loginBtn.style.display = "block";
+      registerBtn.style.display = "block";
+      logoutBtn.style.display = "none";
+      projectControls.style.display = "none";
+      document.getElementById('myProjectList').innerHTML = "";
+      document.getElementById('sharedProjectList').innerHTML = "";
+      document.getElementById('output').innerHTML = "";
+      document.getElementById('codeArea').value = "";
+      workspace.clear();
+    }
+
+    // Utility Function to Capitalize First Letter
+    function capitalizeFirstLetter(string) {
+      return string.charAt(0).toUpperCase() + string.slice(1);
+    }
+
+    // ===========================
+    // Project Management Logic
+    // ===========================
+    const runButton = document.getElementById('runButton');
+    const saveButton = document.getElementById('saveButton');
+    const exportButton = document.getElementById('exportButton');
+    const importButton = document.getElementById('importButton');
+    const viewSharedProjectsButton = document.getElementById('viewSharedProjectsButton');
+    const myProjectList = document.getElementById('myProjectList');
+    const sharedProjectList = document.getElementById('sharedProjectList');
+    const importFileInput = document.getElementById('importFile');
+
+    runButton.onclick = function() {
+      // Clear previous output
+      document.getElementById('output').innerHTML = '';
+      // Override console.log
+      console.log = function(message) {
+        var msg = typeof message === 'object' ? JSON.stringify(message) : message;
+        document.getElementById('output').innerHTML += msg + '<br>';
+      };
+      try {
+        // Generate JavaScript code from blocks
+        var code = Blockly.JavaScript.workspaceToCode(workspace);
+        document.getElementById('codeArea').value = code;
+        // Execute the generated code
+        eval(code);
+      } catch (e) {
+        document.getElementById('output').innerHTML += `<span style="color: red;">Error: ${e.message}</span>`;
+      }
+    }
+
+    saveButton.onclick = function() {
+      if (!currentUser) {
+        alert("Please login to save projects.");
+        return;
+      }
+      const projectName = prompt("Enter project name:");
+      if (!projectName) return;
+
+      const xml = Blockly.Xml.workspaceToDom(workspace);
+      const xmlText = Blockly.Xml.domToText(xml);
+
+      // Retrieve existing projects
+      let projects = JSON.parse(localStorage.getItem(`projects_${currentUser}`)) || {};
+
+      // Save project
+      projects[projectName] = { xml: xmlText, shared: false };
+      localStorage.setItem(`projects_${currentUser}`, JSON.stringify(projects));
+
+      alert("Project saved successfully!");
+      loadUserProjects();
+    }
+
+    exportButton.onclick = function() {
+      if (!currentUser) {
+        alert("Please login to export projects.");
+        return;
+      }
+      const projectName = prompt("Enter project name to export:");
+      if (!projectName) return;
+
+      let projects = JSON.parse(localStorage.getItem(`projects_${currentUser}`)) || {};
+      if (!projects[projectName]) {
+        alert("Project not found.");
+        return;
+      }
+
+      const projectData = {
+        name: projectName,
+        xml: projects[projectName].xml,
+        owner: currentUser,
+        role: currentUserRole
+      };
+
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(projectData));
+      const downloadAnchorNode = document.createElement('a');
+      downloadAnchorNode.setAttribute("href",     dataStr);
+      downloadAnchorNode.setAttribute("download", `${projectName}.json`);
+      document.body.appendChild(downloadAnchorNode); // required for firefox
+      downloadAnchorNode.click();
+      downloadAnchorNode.remove();
+    }
+
+    importButton.onclick = function() {
+      importFileInput.click();
+    }
+
+    importFileInput.onchange = function(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const projectData = JSON.parse(e.target.result);
+          if (!projectData.name || !projectData.xml || !projectData.owner) {
+            alert("Invalid project file.");
+            return;
+          }
+
+          if (currentUserRole === 'teacher' || currentUser === projectData.owner) {
+            // Teachers can import any shared project
+            // Students can import only their own projects
+            let projects = JSON.parse(localStorage.getItem(`projects_${currentUser}`)) || {};
+            projects[projectData.name] = { xml: projectData.xml, shared: false };
+            localStorage.setItem(`projects_${currentUser}`, JSON.stringify(projects));
+            alert("Project imported successfully!");
+            loadUserProjects();
+          } else {
+            alert("You do not have permission to import this project.");
+          }
+        } catch (error) {
+          alert("Error reading project file.");
+        }
+      }
+      reader.readAsText(file);
+      // Reset the input
+      importFileInput.value = "";
+    }
+
+    viewSharedProjectsButton.onclick = function() {
+      loadSharedProjects();
+    }
+
+    // Function to Load User's Projects
+    function loadUserProjects() {
+      if (!currentUser) return;
+      let projects = JSON.parse(localStorage.getItem(`projects_${currentUser}`)) || {};
+      myProjectList.innerHTML = "";
+
+      if (Object.keys(projects).length === 0) {
+        myProjectList.innerHTML = "<p>No projects found.</p>";
+        return;
+      }
+
+      for (let projectName in projects) {
+        let project = projects[projectName];
+        let div = document.createElement('div');
+        div.className = 'project-item';
+        div.innerHTML = `<span>${projectName}</span>`;
+
+        if (currentUserRole === 'teacher') {
+          let shareBtn = document.createElement('button');
+          shareBtn.className = 'share-button';
+          shareBtn.innerText = project.shared ? "Unshare" : "Share";
+          shareBtn.onclick = function(e) {
+            e.stopPropagation();
+            project.shared = !project.shared;
+            projects[projectName].shared = project.shared;
+            localStorage.setItem(`projects_${currentUser}`, JSON.stringify(projects));
+            alert(`Project ${project.shared ? "shared" : "unshared"} successfully!`);
+            loadUserProjects();
+            if (project.shared) {
+              loadSharedProjects();
+            } else {
+              removeProjectFromSharedList(projectName, currentUser);
+            }
+          }
+          div.appendChild(shareBtn);
+        }
+
+        div.onclick = function() {
+          loadProject(project.xml);
+        }
+
+        myProjectList.appendChild(div);
+      }
+    }
+
+    // Function to Load Shared Projects (Teachers Only)
+    function loadSharedProjects() {
+      if (!currentUser || currentUserRole !== 'teacher') return;
+      sharedProjectList.innerHTML = "";
+
+      let users = JSON.parse(localStorage.getItem('users')) || {};
+      let allProjects = {};
+
+      for (let userEmail in users) {
+        let user = users[userEmail];
+        let projects = JSON.parse(localStorage.getItem(`projects_${userEmail}`)) || {};
+        for (let projectName in projects) {
+          let project = projects[projectName];
+          if (project.shared) {
+            allProjects[`${projectName} (by ${userEmail})`] = project.xml;
+          }
+        }
+      }
+
+      if (Object.keys(allProjects).length === 0) {
+        sharedProjectList.innerHTML = "<p>No shared projects available.</p>";
+        return;
+      }
+
+      for (let projectName in allProjects) {
+        let xml = allProjects[projectName];
+        let div = document.createElement('div');
+        div.className = 'project-item';
+        div.innerText = projectName;
+        div.onclick = function() {
+          loadProject(xml);
+        }
+        sharedProjectList.appendChild(div);
+      }
+    }
+
+    // Function to Remove Unshared Project from Shared List
+    function removeProjectFromSharedList(projectName, userEmail) {
+      if (currentUserRole !== 'teacher') return;
+      // Reload shared projects
+      loadSharedProjects();
+    }
+
+    // Function to Load Project into Workspace
+    function loadProject(xmlText) {
+      const parser = new DOMParser();
+      const xml = parser.parseFromString(xmlText, "text/xml");
+      workspace.clear();
+      Blockly.Xml.domToWorkspace(xml, workspace);
+      alert("Project loaded!");
+    }
+
+    // ===========================
+    // Initialize on Page Load
+    // ===========================
+    window.onload = function() {
+      // Check if a user is already logged in (simple persistence)
+      const savedUser = localStorage.getItem('currentUser');
+      if (savedUser) {
+        currentUser = savedUser;
+        const users = JSON.parse(localStorage.getItem('users')) || {};
+        if (users[currentUser]) {
+          currentUserRole = users[currentUser].role;
+          updateUIOnLogin();
+        }
+      }
+    }
+
+    // ===========================
+    // Save Current User to LocalStorage on Login
+    // ===========================
+    function updateUIOnLogin() {
+      currentUserP.innerText = `Logged in as: ${currentUser} (${capitalizeFirstLetter(currentUserRole)})`;
+      loginBtn.style.display = "none";
+      registerBtn.style.display = "none";
+      logoutBtn.style.display = "block";
+      projectControls.style.display = "block";
+      localStorage.setItem('currentUser', currentUser);
+      loadUserProjects();
+      if (currentUserRole === 'teacher') {
+        loadSharedProjects();
+      }
+    }
+
+    // ===========================
+    // Handle Window Click to Close Modal
+    // ===========================
+    window.onclick = function(event) {
+      if (event.target == authModal) {
+        authModal.style.display = "none";
+      }
+    }
+  </script>
+
+</body>
+</html>
